@@ -1,0 +1,8 @@
+include README.md
+include LICENSE
+include INSTALL.md
+include pyproject.toml
+recursive-include language_embeddings *.pkl
+recursive-exclude * __pycache__
+recursive-exclude * *.py[co]
+
