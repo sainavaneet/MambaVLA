@@ -149,6 +149,10 @@ class MixerModel(nn.Module):
     ) -> None:
         factory_kwargs = {"device": device, "dtype": dtype}
         super().__init__()
+        print(
+            f"[INFO] Creating Mamba MixerModel: layers={n_layer} d_model={d_model} "
+            f"d_intermediate={d_intermediate} device={device}"
+        )
         self.residual_in_fp32 = residual_in_fp32
 
         # self.embedding = nn.Embedding(vocab_size, d_model, **factory_kwargs)

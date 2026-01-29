@@ -13,6 +13,7 @@ from .backbones.multi_img_obs_encoder import MultiImageObsEncoder
 from .backbones.resnet.resnets import ResNetEncoder
 from .backbones.clip.clip_lang_encoder import LangClip
 from .mamba.mamba import MixerModel
+from .utils.networks.transformers.transformer_blocks import TransformerEncoder
 
 
 def create_mamba_backbone(
@@ -52,6 +53,32 @@ def create_mamba_backbone(
         residual_in_fp32=residual_in_fp32,
         device=device,
         dtype=torch.float32,
+    )
+
+
+def create_transformer_backbone(
+    embed_dim: int,
+    n_layer: int,
+    n_heads: int,
+    attn_pdrop: float,
+    resid_pdrop: float,
+    mlp_pdrop: float,
+    block_size: int,
+    bias: bool = False,
+    use_rot_embed: bool = False,
+    rotary_xpos: bool = False,
+):
+    return TransformerEncoder(
+        embed_dim=embed_dim,
+        n_heads=n_heads,
+        attn_pdrop=attn_pdrop,
+        resid_pdrop=resid_pdrop,
+        mlp_pdrop=mlp_pdrop,
+        n_layers=n_layer,
+        block_size=block_size,
+        bias=bias,
+        use_rot_embed=use_rot_embed,
+        rotary_xpos=rotary_xpos,
     )
 
 
@@ -115,6 +142,8 @@ def create_mambavla_model(
     use_language_encoder: bool = True,
     freeze_language_encoder: bool = True,
     clip_model_name: str = 'ViT-B/32',
+    model_type: str = "mamba",
+    transformer_cfg: Optional[Dict] = None,
 ):
     if camera_names is None:
         if dataloader is None:
@@ -170,12 +199,29 @@ def create_mambavla_model(
             model_name=clip_model_name,
         ).to(device)
 
-    encoder = create_mamba_backbone(
-        embed_dim=embed_dim,
-        n_layer=n_layer,
-        d_intermediate=d_intermediate,
-        device=device,
-    )
+    if model_type == "transformer":
+        if transformer_cfg is None:
+            transformer_cfg = {}
+        block_size = 1 + obs_tok_len + action_seq_len + (1 if use_language_encoder else 0)
+        encoder = create_transformer_backbone(
+            embed_dim=embed_dim,
+            n_layer=n_layer,
+            n_heads=transformer_cfg.get("n_heads", 8),
+            attn_pdrop=transformer_cfg.get("attn_pdrop", 0.1),
+            resid_pdrop=transformer_cfg.get("resid_pdrop", 0.1),
+            mlp_pdrop=transformer_cfg.get("mlp_pdrop", 0.0),
+            block_size=block_size,
+            bias=transformer_cfg.get("bias", False),
+            use_rot_embed=transformer_cfg.get("use_rot_embed", False),
+            rotary_xpos=transformer_cfg.get("rotary_xpos", False),
+        ).to(device)
+    else:
+        encoder = create_mamba_backbone(
+            embed_dim=embed_dim,
+            n_layer=n_layer,
+            d_intermediate=d_intermediate,
+            device=device,
+        )
 
     backbone = MambaVLAPolicy(
         encoder=encoder,

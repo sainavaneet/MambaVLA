@@ -582,7 +582,7 @@ class Trainer:
         """Log epoch results to wandb and console."""
         log.info("Epoch {}: Mean train loss is {}".format(num_epoch, epoch_loss.item()))
         
-        if WANDB_AVAILABLE:
+        if WANDB_AVAILABLE and wandb.run is not None:
             try:
                 # Prepare log dict
                 log_dict = {
@@ -622,7 +622,7 @@ class Trainer:
                 log.info(f"Checkpoint saved to {checkpoint_path}")
                 
                 # Log checkpoint save to wandb
-                if WANDB_AVAILABLE:
+                if WANDB_AVAILABLE and wandb.run is not None:
                     try:
                         wandb.log({"checkpoint/saved": True, "checkpoint/epoch": num_epoch + 1})
                     except Exception:
@@ -708,6 +708,8 @@ def train_policy(
     wandb_project: Optional[str] = "MambaVLA",
     wandb_entity: Optional[str] = None,
     wandb_name: Optional[str] = None,
+    model_type: str = "mamba",
+    transformer_cfg: Optional[dict] = None,
     **kwargs
 ):
     """
@@ -747,7 +749,7 @@ def train_policy(
     log.info(f"Using device: {device}")
     
     # Initialize wandb if available
-    if WANDB_AVAILABLE:
+    if WANDB_AVAILABLE and wandb_project is not None:
         try:
             wandb.init(
                 project=wandb_project,
@@ -784,8 +786,8 @@ def train_policy(
     
     log.info(f"Dataset loaded: {len(dataset)} samples")
     
-    # Create model (camera names will be auto-detected from dataloader)
-    log.info("Creating MambaVLA model...")
+
+    log.info(f"Model type: {model_type}")
     model = create_mambavla_model(
         dataloader=dataset,
         camera_names=None,  # Auto-detect from dataloader
@@ -805,6 +807,8 @@ def train_policy(
         obs_encoder_weight_decay=kwargs.get('obs_encoder_weight_decay', 0.05),
         learning_rate=learning_rate,
         betas=kwargs.get('betas', None),
+        model_type=model_type,
+        transformer_cfg=transformer_cfg,
     )
     
     # Count total and trainable parameters
@@ -817,7 +821,7 @@ def train_policy(
     log.info(f"  - Frozen: {frozen_params:,} parameters ({100*frozen_params/total_params:.1f}%)")
     
     # Log model info to wandb
-    if WANDB_AVAILABLE:
+    if WANDB_AVAILABLE and wandb.run is not None:
         try:
             wandb.log({
                 "model/num_parameters": total_params,
@@ -856,6 +860,7 @@ def train_policy(
     # Set working directory
     trainer.working_dir = save_dir
     os.makedirs(save_dir, exist_ok=True)
+    model.working_dir = save_dir
     
     # Start training
     log.info("Starting training...")

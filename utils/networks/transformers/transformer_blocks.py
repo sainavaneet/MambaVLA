@@ -356,6 +356,10 @@ class TransformerEncoder(nn.Module):
             mlp_pdrop: float = 0,
         ):
         super().__init__()
+        print(
+            f"[INFO] Creating TransformerEncoder: layers={n_layers} heads={n_heads} "
+            f"embed_dim={embed_dim} block_size={block_size}"
+        )
         self.blocks = nn.Sequential(
             *[Block(
             embed_dim, 
@@ -877,4 +881,3 @@ class MeanPooling(nn.Module):
 
     def forward(self, x):
         return x.mean(dim=1).view(-1, self.token_dim)
-
