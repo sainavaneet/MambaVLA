@@ -176,4 +176,3 @@ if __name__ == "__main__":
     # Forward pass
     output = encoder(obs_dict)
     print(f"Output shape: {output.shape}")  # Should be [batch_size, num_cameras, latent_dim]
-

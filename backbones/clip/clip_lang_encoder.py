@@ -24,7 +24,7 @@ class LangClip(nn.Module):
         self.clip_rn50 = build_model(model.state_dict()).to(self.device)
 
     def forward(self, x: List) -> torch.Tensor:
-        # Allow gradients to flow through for training
-        tokens = tokenize(x).to(self.device)
-        emb = self.clip_rn50.encode_text(tokens)
+        with torch.no_grad():
+            tokens = tokenize(x).to(self.device)
+            emb = self.clip_rn50.encode_text(tokens)
         return torch.unsqueeze(emb, 1)
