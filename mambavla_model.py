@@ -105,7 +105,7 @@ class MambaVLA(nn.Module):
             else:
                 obs_embed = self.img_encoder(obs_dict)
         else:
-            raise NotImplementedError("Either use point clouds or images as input.")
+            raise NotImplementedError(" Use images as input.")
 
         if self.consider_robot_states and "robot_states" in obs_dict.keys():
             robot_states = obs_dict["robot_states"]
